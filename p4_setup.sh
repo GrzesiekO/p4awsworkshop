@@ -1,5 +1,14 @@
 #!/bin/bash
 
+
+# Known things to be fixed:  
+# 1. Add function to validate dirs and files isnsted of calling it multiple times.
+# 2. Fix variable names
+# 3. Validate values passed to functions
+# 4. Error handling (distro check) - this works for rhel based with dnf
+# 5. Move hardcoded paths/names to a config file
+# 6. Add a log
+
 # Constants
 ROOT_UID=0
 
