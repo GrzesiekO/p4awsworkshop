@@ -105,7 +105,6 @@ You can verify the SDP installation using:
 
 > Where "1" is the instance id of the perforce server
 
-
 This should warn about a missing license, which is expected.
 
 **Troubleshooting**
