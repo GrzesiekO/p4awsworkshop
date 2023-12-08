@@ -185,7 +185,7 @@ fi
 FILE_PATH="/p4/ssl/config.txt"
 
 # Retrieve the EC2 instance DNS name
-EC2_DNS_NAME=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname)
+EC2_DNS_NAME=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname --header "X-aws-ec2-metadata-token: $TOKEN")
 
 
 # Check if the DNS name was successfully retrieved
