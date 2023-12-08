@@ -56,16 +56,19 @@ cd p4awsworkshop
 
 ```
 ### Script Overview
+
 The p4_setup.sh script performs the following actions:
 
-Verifies the script is run as root.
-Installs necessary packages (mainly policy utils for SElinux, P4d has no package dependency) and sets up the environment.
-Configures Perforce user and groups.
-Downloads and sets up the Perforce Software Development Platform (SDP).
-Configures Perforce server (p4d) as a systemd service.
-Generates SSL certificates and configures SELinux policies.
-Initializes Perforce server and client settings.
-Execution
+1. Verifies the script is run as root.
+1. Installs necessary packages (mainly policy utils for SElinux, P4d has no package dependency) and sets up the environment.
+1. Configures Perforce user and groups.
+1. Downloads and sets up the Perforce Software Development Platform (SDP).
+1. Configures Perforce server (p4d) as a systemd service.
+1. Generates SSL certificates and configures SELinux policies.
+1. Initializes Helix Core server and client settings.
+
+### Execution:
+
 Run the Script:
 Execute the script as root or using sudo.
 
@@ -95,6 +98,7 @@ You can verify the SDP installation using:
 ```bash
 
 /hxdepots/p4/common/bin/verify_sdp.sh 1
+> Where "1" is the instance id of the perforce server
 
 ```
 
@@ -108,18 +112,46 @@ Contributing
 Feel free to contribute to this script by submitting pull requests or filing issues in the GitHub repository.
 
 ### Creating a Forwarding Replica with SDP
+
+Perforce SDP (Server Deployment Package) concists of a shell script called "mkrep.sh" that simplifies setup of any of the Helix Core server types (Edge/Standby Replica/Forwarding Replica or Proxy).
+
+During this workshop you will setup a Forwarding Replica **Unfiltered** that is a valid target for a P4 failover.
+
 To create a forwarding replica of your Perforce Helix Core server, follow these steps:
+
+1. Create a replica host. (This might be a later step however mkrep.sh script requires a valid DNS name for a replica server - Amazon Route53 Private Hosted Zone can solve this challange but it adds complexity and it is not main focus of this workshop). 
+Route53 Private Hosted Zone information can be found here: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-creating.html
+
+2. Copy SiteTags.cfg.sample template to /hxdepots/p4/common/config directory (SiteTags are necessery parameter for a mkrep.sh script).
+
+3. Create a new site tag for AWS Region/Subnet that you will use for a replica host.
+
+4. Run the mkrep.sh script on a P4 Commit server first.
+
+5. Install a P4 on a replica host (use basic setup of a mkdirs.sh - remember about the -t option with p4d_replica parameter) **Replica differs from commit in configuration binary is the same, replica issues p4 pull command to pull journal sequence and archived files.
+
+6. Make a seed checkpoint from P4 Commit
+
+7. Copy a seed checkpoint to a Replica host **Multiple ways of copying files between EC2 instances exists - we can use Shared FSx/S3 bucket or tools like: rsync or scp, which depending on the region/network configuration may require additional VPC Peering/Transit Gateway operations. Perforce suggest using rsync for copying archived files.
+
+8. Restore a seed checpoint on a replica host.
+
+9. Login service user and p4 admin from replica to master 
+
+10. Check the replication status p4 pull -lj p4 servers -J or p4 pull -ls run from a replica host.
+
+
+### Detailed Steps
 
 Setting Up the Environment
 Create a Second EC2 Instance:
-Launch a second EC2 instance using the same security group as your primary Perforce server to ensure network connectivity and proper security settings.
+Launch a second EC2 instance using the same security group as your commit Perforce server to ensure network connectivity and proper security settings.
 
 Set Up the SDP Environment:
-Install and configure the SDP environment on the new instance as you did for the primary server. Follow the initial setup steps from the primary server installation.
+Install and configure the SDP environment on the new instance as you did for the commit server. Follow the initial setup steps from the commit server installation.
 
 Configuring Site Tags
 Copy the SiteTags Template:
-Copy the SiteTags.cfg.sample to SiteTags.cfg.
 
 ```bash
 
@@ -128,9 +160,10 @@ cp /hxdepots/sdp/Server/Unix/p4/common/config/SiteTags.cfg.sample /hxdepots/p4/c
 ```
 
 Edit SiteTags.cfg:
+
 Add the AWS region as a new site entry, for example, awseuwest2 for the eu-west-2 region.
 
-Using mkrep.sh to Create the Replica
+Use mkrep.sh to Create the Replica (on a commit server first)
 Run mkrep.sh:
 Execute the mkrep.sh script to create the forwarding replica configuration. Replace [parameters] with the necessary arguments for your setup.
 
