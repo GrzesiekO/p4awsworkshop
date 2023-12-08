@@ -101,9 +101,10 @@ You can verify the SDP installation using:
 ```bash
 
 /hxdepots/p4/common/bin/verify_sdp.sh 1
+```
+
 > Where "1" is the instance id of the perforce server
 
-```
 
 This should warn about a missing license, which is expected.
 
