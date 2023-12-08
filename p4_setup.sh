@@ -27,9 +27,15 @@ SDP_Live_Checkpoint=/p4/sdp/Server/Unix/p4/common/bin/live_checkpoint.sh
 SDP_Offline_Recreate=/p4/sdp/Server/Unix/p4/common/bin/recreate_offline_db.sh
 PACKAGE="policycoreutils-python-utils"
 SDP_Client_Binary=/hxdepots/sdp/helix_binaries/p4
-EC2_DNS_PRIVATE=$(curl -s http://169.254.169.254/latest/meta-data/hostname)
+TOKEN=$(curl --request PUT "http://169.254.169.254/latest/api/token" --header "X-aws-ec2-metadata-token-ttl-seconds: 3600")
+EC2_DNS_PRIVATE=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname --header "X-aws-ec2-metadata-token: $TOKEN")
 SDP_Setup_Script_Config=/hxdepots/sdp/Server/Unix/setup/mkdirs.cfg
 # Check if SELinux is enabled, we need to relabel the service post installation otherwise it will not start p4d
+
+
+
+
+
 SELINUX_STATUS=$(getenforce)
 
 if [ "$SELINUX_STATUS" = "Enforcing" ] || [ "$SELINUX_STATUS" = "Permissive" ]; then
