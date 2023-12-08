@@ -1,4 +1,4 @@
-# p4awsworkshop
+# P4d hosting on AWS
 This is a repository of a P4 hosting on AWS workshop. Check at your own risk. 
 
 ### Creating an EC2 Instance
@@ -43,7 +43,7 @@ Clone the Repository:
 Clone this repository to your local machine or directly to your EC2 instance.
 
 ```bash
-git clone [REPO_URL]
+git clone https://github.com/GrzesiekO/p4awsworkshop.git
 ```
 Navigate to the Script:
 
@@ -52,14 +52,14 @@ Change to the directory containing the p4_setup.sh script.
 
 ```bash
 
-cd [REPO_DIRECTORY]
+cd p4awsworkshop
 
 ```
 ### Script Overview
 The p4_setup.sh script performs the following actions:
 
 Verifies the script is run as root.
-Installs necessary packages and sets up the environment.
+Installs necessary packages (mainly policy utils for SElinux, P4d has no package dependency) and sets up the environment.
 Configures Perforce user and groups.
 Downloads and sets up the Perforce Software Development Platform (SDP).
 Configures Perforce server (p4d) as a systemd service.
