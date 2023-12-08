@@ -128,11 +128,12 @@ Route53 Private Hosted Zone information can be found here: https://docs.aws.amaz
 
 4. Run the mkrep.sh script on a P4 Commit server first.
 
-5. Install a P4 on a replica host (use basic setup of a mkdirs.sh - remember about the -t option with p4d_replica parameter) **Replica differs from commit in configuration binary is the same, replica issues p4 pull command to pull journal sequence and archived files.
+5. Install a P4 on a replica host (use basic setup of a mkdirs.sh - remember about the -t option with p4d_replica parameter) **Replica differs from commit in configuration binary is the same, replica issues p4 pull command to pull journal sequence and archived files.**
 
 6. Make a seed checkpoint from P4 Commit
 
-7. Copy a seed checkpoint to a Replica host **Multiple ways of copying files between EC2 instances exists - we can use Shared FSx/S3 bucket or tools like: rsync or scp, which depending on the region/network configuration may require additional VPC Peering/Transit Gateway operations. Perforce suggest using rsync for copying archived files.
+7. Copy a seed checkpoint to a Replica host **Multiple ways of copying files between EC2 instances exists - we can use Shared FSx/S3 bucket or tools like: rsync or scp, which depending on the region/network configuration may require additional VPC Peering/Transit Gateway operations. Perforce suggest using rsync for copying archived files. 
+Use: https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/creating-file-systems.html for reference.
 
 8. Restore a seed checpoint on a replica host.
 
