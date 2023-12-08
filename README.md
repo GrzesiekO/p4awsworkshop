@@ -1,7 +1,8 @@
 # P4d hosting on AWS
-This is a repository of a P4 hosting on AWS workshop. Check at your own risk. 
 
-### Creating an EC2 Instance
+This is a repository of a P4 hosting on AWS workshop. Check at your own risk.
+
+## Creating an EC2 Instance
 
 1. **Create a Key Pair**:  
    Create a key pair for SSH access to your EC2 instance. Replace `MyKeyPair` with your desired key pair name.
@@ -10,8 +11,8 @@ This is a repository of a P4 hosting on AWS workshop. Check at your own risk.
    aws ec2 create-key-pair --key-name MyKeyPair --query 'KeyMaterial' --output text > MyKeyPair.pem
    chmod 400 MyKeyPair.pem
 
+### Create a Security Group
 
-### Create a Security Group:
 1. **Create a security group that allows SSH and TCP port 1666 for inbound connections. Replace MySecurityGroup with your desired security group name.**
 
 ```bash
@@ -21,17 +22,18 @@ aws ec2 authorize-security-group-ingress --group-name MySecurityGroup --protocol
 
 ```
 
-2. **Launch an EC2 Instance:**
+1. **Launch an EC2 Instance:**
 Launch an EC2 instance using the created key pair and security group. Replace ami-xxxxxxxxxxxxxx with the AMI ID of your choice.
-
 
 ```bash
 
 aws ec2 run-instances --image-id ami-xxxxxxxxxxxxxx --count 1 --instance-type t2.micro --key-name MyKeyPair --security-groups MySecurityGroup
 ```
+
 Note: Ensure the AMI ID (ami-xxxxxxxxxxxxxx) is compatible with your region and requirements.
 
 ### Perforce Helix Core Server Setup
+
 This workshop guides you through the process of setting up a Perforce Helix Core server using the provided p4_setup.sh script. The script automates the installation and configuration of a Perforce server on a Linux environment, specifically tailored for an EC2 instance.
 
 **Prerequisites**
@@ -45,8 +47,8 @@ Clone this repository to your local machine or directly to your EC2 instance.
 ```bash
 git clone https://github.com/GrzesiekO/p4awsworkshop.git
 ```
-Navigate to the Script:
 
+Navigate to the Script:
 
 Change to the directory containing the p4_setup.sh script.
 
@@ -55,6 +57,7 @@ Change to the directory containing the p4_setup.sh script.
 cd p4awsworkshop
 
 ```
+
 ### Script Overview
 
 The p4_setup.sh script performs the following actions:
@@ -67,7 +70,7 @@ The p4_setup.sh script performs the following actions:
 1. Generates SSL certificates and configures SELinux policies.
 1. Initializes Helix Core server and client settings.
 
-### Execution:
+### Execution
 
 Run the Script:
 Execute the script as root or using sudo.
@@ -105,7 +108,6 @@ You can verify the SDP installation using:
 This should warn about a missing license, which is expected.
 
 **Troubleshooting**
-
 If you encounter any issues during the setup, review the console output for errors.
 Ensure that you have the necessary permissions and that SELinux is correctly configured.
 Contributing
@@ -119,8 +121,8 @@ During this workshop you will setup a Forwarding Replica **Unfiltered** that is 
 
 To create a forwarding replica of your Perforce Helix Core server, follow these steps:
 
-1. Create a replica host. (This might be a later step however mkrep.sh script requires a valid DNS name for a replica server - Amazon Route53 Private Hosted Zone can solve this challange but it adds complexity and it is not main focus of this workshop). 
-Route53 Private Hosted Zone information can be found here: https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-creating.html
+1. Create a replica host. (This might be a later step however mkrep.sh script requires a valid DNS name for a replica server - Amazon Route53 Private Hosted Zone can solve this challange but it adds complexity and it is not main focus of this workshop).
+Route53 Private Hosted Zone information can be found here: <https://docs.aws.amazon.com/Route53/latest/DeveloperGuide/hosted-zone-private-creating.html>
 
 2. Copy SiteTags.cfg.sample template to /hxdepots/p4/common/config directory (SiteTags are necessery parameter for a mkrep.sh script).
 
@@ -132,15 +134,14 @@ Route53 Private Hosted Zone information can be found here: https://docs.aws.amaz
 
 6. Make a seed checkpoint from P4 Commit
 
-7. Copy a seed checkpoint to a Replica host **Multiple ways of copying files between EC2 instances exists - we can use Shared FSx/S3 bucket or tools like: rsync or scp, which depending on the region/network configuration may require additional VPC Peering/Transit Gateway operations. Perforce suggest using rsync for copying archived files. 
-Use: https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/creating-file-systems.html for reference.
+7. Copy a seed checkpoint to a Replica host **Multiple ways of copying files between EC2 instances exists - we can use Shared FSx/S3 bucket or tools like: rsync or scp, which depending on the region/network configuration may require additional VPC Peering/Transit Gateway operations. Perforce suggest using rsync for copying archived files.
+Use: <https://docs.aws.amazon.com/fsx/latest/OpenZFSGuide/creating-file-systems.html> for reference.
 
 8. Restore a seed checpoint on a replica host.
 
-9. Login service user and p4 admin from replica to master 
+9. Login service user and p4 admin from replica to master
 
 10. Check the replication status p4 pull -lj p4 servers -J or p4 pull -ls run from a replica host.
-
 
 ### Detailed Steps
 
@@ -173,5 +174,6 @@ Execute the mkrep.sh script to create the forwarding replica configuration. Repl
 /path/to/mkrep.sh [parameters]
 
 ```
+
 Manual Steps for Phase 2:
 After running mkrep.sh, complete the manual steps required for Phase 2 of the setup. [Here, include specific instructions or refer to the appropriate section of the SDP guide that outlines these steps.]
