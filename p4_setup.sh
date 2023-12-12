@@ -8,6 +8,8 @@
 # 4. Error handling (distro check) - this works for rhel based with dnf
 # 5. Move hardcoded paths/names to a config file
 # 6. Add a log
+# 7. Split the script into two: one for p4 copy of necessary files and second to run mkdirs cfg to setup replica. make te second setup also a one timer that mounts basic dirs /hxlogs /hxmetadata /hxdepots
+
 
 # Constants
 ROOT_UID=0
@@ -21,15 +23,11 @@ fi
 # Set local variables
 SDP_Root=/hxdepots/sdp/helix_binaries
 SDP=/hxdepots/sdp
-SDP_Setup_Script=/hxdepots/sdp/Server/Unix/setup/mkdirs.sh
-SDP_New_Server_Script=/p4/sdp/Server/setup/configure_new_server.sh
-SDP_Live_Checkpoint=/p4/sdp/Server/Unix/p4/common/bin/live_checkpoint.sh
-SDP_Offline_Recreate=/p4/sdp/Server/Unix/p4/common/bin/recreate_offline_db.sh
-PACKAGE="policycoreutils-python-utils"
-SDP_Client_Binary=/hxdepots/sdp/helix_binaries/p4
-TOKEN=$(curl --request PUT "http://169.254.169.254/latest/api/token" --header "X-aws-ec2-metadata-token-ttl-seconds: 3600")
-EC2_DNS_PRIVATE=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname --header "X-aws-ec2-metadata-token: $TOKEN")
-SDP_Setup_Script_Config=/hxdepots/sdp/Server/Unix/setup/mkdirs.cfg
+PACKAGE="policycoreutils-python-utils" # Required in both
+
+TOKEN=$(curl --request PUT "http://169.254.169.254/latest/api/token" --header "X-aws-ec2-metadata-token-ttl-seconds: 3600") # This is only for the metadata V2 need to check go and try the V1 with no token and see which one works. 
+EC2_DNS_PRIVATE=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname --header "X-aws-ec2-metadata-token: $TOKEN") # same need to check for V2 vs V1
+SDP_Setup_Script_Config=/hxdepots/sdp/Server/Unix/setup/mkdirs.cfg # Config to the new script needed for mkdirs.sh
 # Check if SELinux is enabled, we need to relabel the service post installation otherwise it will not start p4d
 
 
@@ -173,6 +171,15 @@ sed -i "s/^P4MASTERHOST=.*/P4MASTERHOST=$EC2_DNS_PRIVATE/" "$SDP_Setup_Script_Co
 echo "Updated P4MASTERHOST to $EC2_DNS_PRIVATE in $SDP_Setup_Script_Config."
 
 
+
+# Below to be moved to the other script.
+
+SDP_Setup_Script=/hxdepots/sdp/Server/Unix/setup/mkdirs.sh # This to be moved to the other script
+SDP_New_Server_Script=/p4/sdp/Server/setup/configure_new_server.sh # To be moved to second one this is part of configuration of a new master.
+SDP_Live_Checkpoint=/p4/sdp/Server/Unix/p4/common/bin/live_checkpoint.sh # To be moved
+SDP_Offline_Recreate=/p4/sdp/Server/Unix/p4/common/bin/recreate_offline_db.sh # To be moved
+SDP_Client_Binary=/hxdepots/sdp/helix_binaries/p4 
+
 # Execute mkdirs.sh from the extracted package
 if [ -f "$SDP_Setup_Script" ]; then
   chmod +x "$SDP_Setup_Script"
@@ -226,9 +233,10 @@ wait_for_service "p4d_1"
 P4PORT=ssl:1666
 P4USER=perforce
 
-
 #probably need to copy p4 binary to the /usr/bin or add to the path variable to avoid running with a full path adding:
 #permissions for lal users:
+
+
 chmod +x /hxdepots/sdp/helix_binaries/p4
 ln -s $SDP_Client_Binary /usr/bin/p4
 
