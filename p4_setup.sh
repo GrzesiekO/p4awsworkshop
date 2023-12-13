@@ -9,13 +9,13 @@ log_message() {
 }
 
 # Known things to be fixed:  
-# 1. Add function to validate dirs and files isnsted of calling it multiple times.
-# 2. Fix variable names
+# 1. Add function to validate dirs and files isnsted of calling it multiple times. - DONE
+# 2. Fix variable names 
 # 3. Validate values passed to functions
 # 4. Error handling (distro check) - this works for rhel based with dnf
 # 5. Move hardcoded paths/names to a config file
-# 6. Add a log
-# 7. Split the script into two: one for p4 copy of necessary files and second to run mkdirs cfg to setup replica. make te second setup also a one timer that mounts basic dirs /hxlogs /hxmetadata /hxdepots
+# 6. Add a log - DONE
+# 7. Split the script into two: one for p4 copy of necessary files and second to run mkdirs cfg to setup replica. make te second setup also a one timer that mounts basic dirs /hxlogs /hxmetadata /hxdepots - DONE
 
 
 # Constants

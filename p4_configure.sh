@@ -1,5 +1,8 @@
 #!/bin/bash
 
+
+#Currently this needs proper EBS volume locations from /dev with proper nvme names $1 is a hxlogs $2 hxdepots $3 hxmetadata
+
 # Log file location
 LOG_FILE="/var/log/p4_configure.log"
 
