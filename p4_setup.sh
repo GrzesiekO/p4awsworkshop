@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Log file location
+LOG_FILE="/var/log/p4_setup.log"
+
+# Function to log messages
+log_message() {
+    echo "$(date) - $1" >> $LOG_FILE
+}
 
 # Known things to be fixed:  
 # 1. Add function to validate dirs and files isnsted of calling it multiple times.
@@ -17,6 +24,7 @@ ROOT_UID=0
 # Check if script is run as root
 if [ "$UID" -ne "$ROOT_UID" ]; then
   echo "Must be root to run this script."
+  log_message "Function not run as a root."
   exit 1
 fi
 
@@ -30,27 +38,26 @@ EC2_DNS_PRIVATE=$(curl -s http://169.254.169.254/latest/meta-data/public-hostnam
 SDP_Setup_Script_Config=/hxdepots/sdp/Server/Unix/setup/mkdirs.cfg # Config to the new script needed for mkdirs.sh
 # Check if SELinux is enabled, we need to relabel the service post installation otherwise it will not start p4d
 
-
-
-
-
 SELINUX_STATUS=$(getenforce)
 
+
+
+
 if [ "$SELINUX_STATUS" = "Enforcing" ] || [ "$SELINUX_STATUS" = "Permissive" ]; then
-    echo "SELinux is enabled."
+    log_message "SELinux is enabled."
     if ! dnf list installed "$PACKAGE" &> /dev/null; then
-        echo "Package $PACKAGE is not installed. Installing..."
+        log_message "Package $PACKAGE is not installed. Installing..."
         sudo dnf install -y "$PACKAGE"
         if [ $? -eq 0 ]; then
-            echo "$PACKAGE installed successfully."
+            log_message "$PACKAGE installed successfully."
         else
-            echo "Failed to install $PACKAGE."
+            log_message "Failed to install $PACKAGE."
         fi
     else
-        echo "Package $PACKAGE is already installed."
+        log_message "Package $PACKAGE is already installed."
     fi
 else
-    echo "SELinux is not enabled. Skipping package installation."
+    log_message "SELinux is not enabled. Skipping package installation."
 fi
 
 # Function to check if a group exists
@@ -75,23 +82,23 @@ wait_for_service() {
   local attempt=1
 
   while [ $attempt -le $max_attempts ]; do
-    echo "Waiting for $service_name to start... Attempt $attempt of $max_attempts."
+    log_message "Waiting for $service_name to start... Attempt $attempt of $max_attempts."
     systemctl is-active --quiet $service_name && break
     sleep 1
     ((attempt++))
   done
 
   if [ $attempt -gt $max_attempts ]; then
-    echo "Service $service_name did not start within the expected time."
+    log_message "Service $service_name did not start within the expected time."
     return 1
   fi
 
-  echo "Service $service_name started successfully."
+  log_message "Service $service_name started successfully."
   return 0
 }
 
-echo "Installing Perforce"
-dnf update -y
+log_message "Installing Perforce"
+# dnf update -y skipping this for now as it prolongs the AMI build and can be called post launch. 
 
 # Check if group 'perforce' exists, if not, add it
 if ! group_exists perforce; then
@@ -112,7 +119,7 @@ if [ ! -f /etc/sudoers.d/perforce ]; then
 fi
 
 # Create directories if they don't exist
-for dir in /hxdepots /hxlogs; do
+for dir in /hxdepots /hxlogs /hxmetadata; do
   if ! directory_exists $dir; then
     mkdir $dir
   fi
@@ -160,7 +167,7 @@ cd /hxdepots/sdp/Server/Unix/setup
 #update the mkdirs.cfg so it has proper hostname a private DNS form EC2 otherwise adding replica is not possible due to wrong P4TARGET settings.
 
 if [ ! -f "$SDP_Setup_Script_Config" ]; then
-    echo "Error: Configuration file not found at $SDP_Setup_Script_Config."
+    log_message "Error: Configuration file not found at $SDP_Setup_Script_Config."
     exit 1
 fi
 
@@ -168,114 +175,5 @@ fi
 # Update P4MASTERHOST value in the configuration file
 sed -i "s/^P4MASTERHOST=.*/P4MASTERHOST=$EC2_DNS_PRIVATE/" "$SDP_Setup_Script_Config"
 
-echo "Updated P4MASTERHOST to $EC2_DNS_PRIVATE in $SDP_Setup_Script_Config."
-
-
-
-# Below to be moved to the other script.
-
-SDP_Setup_Script=/hxdepots/sdp/Server/Unix/setup/mkdirs.sh # This to be moved to the other script
-SDP_New_Server_Script=/p4/sdp/Server/setup/configure_new_server.sh # To be moved to second one this is part of configuration of a new master.
-SDP_Live_Checkpoint=/p4/sdp/Server/Unix/p4/common/bin/live_checkpoint.sh # To be moved
-SDP_Offline_Recreate=/p4/sdp/Server/Unix/p4/common/bin/recreate_offline_db.sh # To be moved
-SDP_Client_Binary=/hxdepots/sdp/helix_binaries/p4 
-
-# Execute mkdirs.sh from the extracted package
-if [ -f "$SDP_Setup_Script" ]; then
-  chmod +x "$SDP_Setup_Script"
-  "$SDP_Setup_Script" 1
-else
-  echo "Setup script (mkdirs.sh) not found."
-fi
-
-# update cert config with ec2 DNS name
-FILE_PATH="/p4/ssl/config.txt"
-
-# Retrieve the EC2 instance DNS name
-EC2_DNS_NAME=$(curl -s http://169.254.169.254/latest/meta-data/public-hostname --header "X-aws-ec2-metadata-token: $TOKEN")
-
-
-# Check if the DNS name was successfully retrieved
-if [ -z "$EC2_DNS_NAME" ]; then
-  echo "Failed to retrieve EC2 instance DNS name."
-  exit 1
-fi
-
-# Replace REPL_DNSNAME with the EC2 instance DNS name for ssl certificate generation
-sed -i "s/REPL_DNSNAME/$EC2_DNS_NAME/" "$FILE_PATH"
-
-echo "File updated successfully."
-
-I=1
-# generate certificate 
-
-/p4/common/bin/p4master_run ${I} /p4/${I}/bin/p4d_${I} -Gc
-
-# Configure systemd service to start p4d
-
-
-cd /etc/systemd/system
-sed -e "s:__INSTANCE__:$I:g" -e "s:__OSUSER__:perforce:g" $SDP/Server/Unix/p4/common/etc/systemd/system/p4d_N.service.t > p4d_${I}.service
-chmod 644 p4d_${I}.service
-systemctl daemon-reload
-
-
-# update label for selinux
-semanage fcontext -a -t bin_t /p4/1/bin/p4d_1_init
-restorecon -vF /p4/1/bin/p4d_1_init
-
-# start service
-systemctl start p4d_1
-
-# Wait for the p4d service to start before continuing
-wait_for_service "p4d_1"
-
-P4PORT=ssl:1666
-P4USER=perforce
-
-#probably need to copy p4 binary to the /usr/bin or add to the path variable to avoid running with a full path adding:
-#permissions for lal users:
-
-
-chmod +x /hxdepots/sdp/helix_binaries/p4
-ln -s $SDP_Client_Binary /usr/bin/p4
-
-# now can test:
-p4 -p ssl:$HOSTNAME:1666 trust -y
-
-
-# Execute new server setup from the extracted package
-if [ -f "$SDP_New_Server_Script" ]; then
-  chmod +x "$SDP_New_Server_Script"
-  "$SDP_New_Server_Script" 1
-else
-  echo "Setup script (configure_new_server.sh) not found."
-fi
-
-
-
-# create a live checkpoint and restore offline db
-# switching to user perforce
-
-
-if [ -f "$SDP_Live_Checkpoint" ]; then
-  chmod +x "$SDP_Live_Checkpoint"
-  sudo -u perforce "$SDP_Live_Checkpoint" 1
-else
-  echo "Setup script (SDP_Live_Checkpoint) not found."
-fi
-
-if [ -f "$SDP_Offline_Recreate" ]; then
-  chmod +x "$SDP_Offline_Recreate"
-  sudo -u perforce "$SDP_Offline_Recreate" 1
-else
-  echo "Setup script (SDP_Offline_Recreate) not found."
-fi
-
-# initialize crontab for user perforce
-
-sudo -u perforce crontab /p4/p4.crontab.1
-
-# verify sdp installation should warn about missing license only:
-/hxdepots/p4/common/bin/verify_sdp.sh 1
+log_message "Updated P4MASTERHOST to $EC2_DNS_PRIVATE in $SDP_Setup_Script_Config."
 
